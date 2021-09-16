@@ -3,7 +3,7 @@ const cheerio = require('cheerio'),
     Sitemapper = require('sitemapper');
 
 const siteUrl = 'https://legal-support.ru'
-const sitemapUrl = sitemapUrl + '/sitemap.xml'
+const sitemapUrl = siteUrl + '/sitemap.xml'
 
 const parse = async () => {
     const getSiteUrls = async (url) => {
@@ -29,13 +29,29 @@ const parse = async () => {
                 forms: []
             }
 
-            $('.js-fancy-ajax-modal-rd--sm').each(async function() {
-                // Todo симулировать клик по кнопкам, чтобы подгрузить формы
+            $('a[href^="/local/ajax/"]').each(async function() {
+                // Todo симулировать клик по кнопкам, чтобы подгрузить формы, либо подгрузить их ajax-запросом
                 // $(this).trigger('click')
-                const { ajaxForm } = await axios.get(siteUrl + $(this).attr('href'))
-                const $_ = cheerio.load(ajaxForm)
-            })
+                const href = $(this).attr('href')
+                console.log(href)
 
+                if (typeof href === "undefined") {
+                    return
+                }
+                
+                try {
+                    const { ajaxForm } = await axios.get(siteUrl + href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    const $_ = cheerio.load(ajaxForm)
+                    
+                    formsArray.forms.push($_('form').attr('class'))
+                } catch(err) {
+                    console.error(err)
+                }
+            })
             $('form').each(function() {
                 const pageData = $(this).attr('class')
                 formsArray.forms.push(pageData)
